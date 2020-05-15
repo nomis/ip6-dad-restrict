@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <pcap/pcap.h>
+#include <array>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -28,10 +29,13 @@
 #include "print_error.h"
 
 using ::boost::format;
+using ::std::array;
 using ::std::cout;
 using ::std::endl;
+using ::std::make_unique;
 using ::std::shared_ptr;
 using ::std::string;
+using ::std::unique_ptr;
 
 namespace ip6_dad_restrict {
 
@@ -60,9 +64,9 @@ Capture::Capture(const std::string &interface) {
 	}
 }
 
-void Capture::next() {
+std::unique_ptr<DADPacket> Capture::next() {
 	if (!handle_) {
-		return;
+		return nullptr;
 	}
 
 	constexpr size_t ETH_HDR_LEN = 14;
@@ -81,9 +85,10 @@ void Capture::next() {
 			print_system_error(format("pcap: %1%"), ::pcap_geterr(handle_.get()));
 		}
 		handle_.reset();
-		return;
+		return nullptr;
 	}
 
+	unique_ptr<DADPacket> packet;
 	cout << format("%1%.%2$06d") % header->ts.tv_sec % header->ts.tv_usec;
 
 	if (header->caplen >= ETH_MIN_LEN) {
@@ -116,42 +121,82 @@ void Capture::next() {
 		if (!::memcmp(&data[ETH_HDR_LEN+8], zero, sizeof(zero))) {
 			cout << " DAD";
 
-			bool eui64 = (
-					data[IP6_MIN_LEN+8+ 8] == (data[6] ^ 0x02) &&
-					data[IP6_MIN_LEN+8+ 9] == data[7] &&
-					data[IP6_MIN_LEN+8+10] == data[8] &&
-					data[IP6_MIN_LEN+8+11] == 0xFF &&
-					data[IP6_MIN_LEN+8+12] == 0xFE &&
-					data[IP6_MIN_LEN+8+13] == data[9] &&
-					data[IP6_MIN_LEN+8+14] == data[10] &&
-					data[IP6_MIN_LEN+8+15] == data[11]
-			);
+			packet = make_unique<DADPacket>(
+							array<unsigned char,6>{ data[6], data[7], data[8], data[9], data[10], data[11] },
+							array<unsigned char,16>{
+								data[IP6_MIN_LEN+8+ 0], data[IP6_MIN_LEN+8+ 1], data[IP6_MIN_LEN+8+ 2], data[IP6_MIN_LEN+8+ 3],
+								data[IP6_MIN_LEN+8+ 4], data[IP6_MIN_LEN+8+ 5], data[IP6_MIN_LEN+8+ 6], data[IP6_MIN_LEN+8+ 7],
+								data[IP6_MIN_LEN+8+ 8], data[IP6_MIN_LEN+8+ 9], data[IP6_MIN_LEN+8+10], data[IP6_MIN_LEN+8+11],
+								data[IP6_MIN_LEN+8+12], data[IP6_MIN_LEN+8+13], data[IP6_MIN_LEN+8+14], data[IP6_MIN_LEN+8+15]
+							}
+						);
 
-			if ((data[IP6_MIN_LEN+8+0] & 0xE0) == 0x20) { // Global Unicast (2000::/3)
+			switch (packet->type()) {
+			case AddressType::GLOBAL_UNICAST:
 				cout << " GU";
 
-				if (eui64) {
+				if (packet->eui64()) {
 					cout << " EUI-64";
 				}
-			} else if ((data[IP6_MIN_LEN+8+0] & 0xFE) == 0xFC) { // Unique Local Unicast (fc00::/7)
+				break;
+
+			case AddressType::UNIQUE_LOCAL_UNICAST:
 				cout << " ULA";
 
-				if (eui64) {
+				if (packet->eui64()) {
 					cout << " EUI-64";
 				}
-			} else if (data[IP6_MIN_LEN+8+0] == 0xFE && (data[IP6_MIN_LEN+8+1] & 0xC0) == 0x80) { // Link-Scoped Unicast (fe80::/10)
+				break;
+
+			case AddressType::LINK_SCOPED_UNICAST:
 				cout << " LL";
 
-				if (eui64) {
+				if (packet->eui64()) {
 					cout << " EUI-64";
 				}
-			} else if (data[IP6_MIN_LEN+8+0] == 0xFF) { // Multicast (ff00::/8)
+				break;
+
+			case AddressType::MULTICAST:
 				cout << " MC";
+				break;
+
+			case AddressType::UNKNOWN:
+				break;
 			}
 		}
 	}
 
 	cout << endl;
+	return packet;
+}
+
+bool DADPacket::eui64() const {
+	return target_ip[8] == (source_mac[0] ^ 0x02) &&
+		target_ip[9] == source_mac[1] &&
+		target_ip[10] == source_mac[2] &&
+		target_ip[11] == 0xFF &&
+		target_ip[12] == 0xFE &&
+		target_ip[13] == source_mac[3] &&
+		target_ip[14] == source_mac[4] &&
+		target_ip[15] == source_mac[5];
+}
+
+AddressType DADPacket::type() const {
+	if ((target_ip[0] & 0xE0) == 0x20) { // Global Unicast (2000::/3)
+		return AddressType::GLOBAL_UNICAST;
+	} else if ((target_ip[0] & 0xFE) == 0xFC) { // Unique Local Unicast (fc00::/7)
+		return AddressType::UNIQUE_LOCAL_UNICAST;
+	} else if (target_ip[0] == 0xFE && (target_ip[1] & 0xC0) == 0x80) { // Link-Scoped Unicast (fe80::/10)
+		return AddressType::LINK_SCOPED_UNICAST;
+	} else if (target_ip[0] == 0xFF) { // Multicast (ff00::/8)
+		return AddressType::MULTICAST;
+	} else {
+		return AddressType::UNKNOWN;
+	}
+}
+
+bool DADPacket::bad() const {
+	return (type() == AddressType::GLOBAL_UNICAST || type() == AddressType::UNIQUE_LOCAL_UNICAST) && !eui64();
 }
 
 } // namespace ip6_dad_restrict

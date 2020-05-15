@@ -24,15 +24,6 @@ source_files = [
 c = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
-if not (c.get_id() == 'gcc' and c.version().version_compare('<5'))
-	if c.has_argument('-Wshadow')
-		add_project_arguments('-Wshadow', language: 'c')
-	endif
-	if cpp.has_argument('-Wshadow')
-		add_project_arguments('-Wshadow', language: 'cpp')
-	endif
-endif
-
 c_args = ['-D_POSIX_C_SOURCE=200809L']
 
 executable('ip6-dad-restrict',

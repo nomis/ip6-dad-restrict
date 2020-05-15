@@ -20,10 +20,31 @@
 
 #include <pcap/pcap.h>
 
+#include <array>
 #include <memory>
 #include <string>
 
 namespace ip6_dad_restrict {
+
+enum class AddressType {
+	UNKNOWN,
+	GLOBAL_UNICAST,
+	UNIQUE_LOCAL_UNICAST,
+	LINK_SCOPED_UNICAST,
+	MULTICAST,
+};
+
+struct DADPacket {
+	DADPacket(const std::array<unsigned char,6> source_mac, const std::array<unsigned char,16> target_ip) : source_mac(source_mac), target_ip(target_ip) {};
+	~DADPacket() = default;
+
+	bool eui64() const;
+	AddressType type() const;
+	bool bad() const;
+
+	const std::array<unsigned char,6> source_mac;
+	const std::array<unsigned char,16> target_ip;
+};
 
 class Capture {
 public:
@@ -35,7 +56,7 @@ public:
 
 	explicit operator bool() const { return handle_.get(); }
 
-	void next();
+	std::unique_ptr<DADPacket> next();
 
 private:
 	std::shared_ptr<pcap_t> handle_;
