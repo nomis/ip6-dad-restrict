@@ -17,6 +17,7 @@
 */
 #include "capture.h"
 
+#include <string.h>
 #include <pcap/pcap.h>
 #include <iostream>
 #include <memory>
@@ -102,6 +103,12 @@ void Capture::next() {
 						% (int)data[14+40+8+ 4] % (int)data[14+40+8+ 5] % (int)data[14+40+8+ 6] % (int)data[14+40+8+ 7]
 						% (int)data[14+40+8+ 8] % (int)data[14+40+8+ 9] % (int)data[14+40+8+10] % (int)data[14+40+8+11]
 						% (int)data[14+40+8+12] % (int)data[14+40+8+13] % (int)data[14+40+8+14] % (int)data[14+40+8+15];
+
+		const char zero[16] = { 0 };
+		if (!::memcmp(&data[14+8], zero, sizeof(zero))) {
+			cout << " DAD";
+
+		}
 	}
 
 	cout << endl;
