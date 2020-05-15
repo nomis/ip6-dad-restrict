@@ -108,6 +108,32 @@ void Capture::next() {
 		if (!::memcmp(&data[14+8], zero, sizeof(zero))) {
 			cout << " DAD";
 
+			bool eui64 = (
+					data[14+40+8+ 8] == (data[6] ^ 0x02) &&
+					data[14+40+8+ 9] == data[7] &&
+					data[14+40+8+10] == data[8] &&
+					data[14+40+8+11] == 0xFF &&
+					data[14+40+8+12] == 0xFE &&
+					data[14+40+8+13] == data[9] &&
+					data[14+40+8+14] == data[10] &&
+					data[14+40+8+15] == data[11]
+			);
+
+			if (data[14+40+8+ 0] == 0xFE && (data[14+40+8+ 1] & 0xC0) == 0x80) {
+				cout << " LL";
+
+				if (eui64) {
+					cout << " EUI-64";
+				}
+			} else if (data[14+40+8+ 0] == 0xFF) {
+				cout << " MC";
+			} else if ((data[14+40+8+ 0] & 0xE0) == 0x20) {
+				cout << " GU";
+
+				if (eui64) {
+					cout << " EUI-64";
+				}
+			}
 		}
 	}
 
