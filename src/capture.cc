@@ -79,8 +79,8 @@ void Capture::next() {
 	cout << format("%1%.%2$06d") % header->ts.tv_sec % header->ts.tv_usec;
 
 	if (header->caplen >= 14) {
-		cout << format(" %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[0] % (int)data[1] % (int)data[2] % (int)data[3] % (int)data[4] % (int)data[5];
-		cout << format(" > %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[6] % (int)data[7] % (int)data[8] % (int)data[9] % (int)data[10] % (int)data[11];
+		cout << format(" %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[6] % (int)data[7] % (int)data[8] % (int)data[9] % (int)data[10] % (int)data[11];
+		cout << format(" > %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[0] % (int)data[1] % (int)data[2] % (int)data[3] % (int)data[4] % (int)data[5];
 	}
 
 	if (header->caplen >= 14+40) {
