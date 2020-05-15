@@ -65,6 +65,13 @@ void Capture::next() {
 		return;
 	}
 
+	constexpr size_t ETH_HDR_LEN = 14;
+	constexpr size_t ETH_MIN_LEN = ETH_HDR_LEN;
+	constexpr size_t IP6_HDR_LEN = 40;
+	constexpr size_t IP6_MIN_LEN = ETH_HDR_LEN + IP6_HDR_LEN;
+	constexpr size_t NDP_LEN = 24;
+	constexpr size_t NDP_MIN_LEN = IP6_MIN_LEN + NDP_LEN;
+	constexpr size_t MAXTTL = 255;
 	struct pcap_pkthdr *header;
 	const u_char *data;
 
@@ -79,56 +86,56 @@ void Capture::next() {
 
 	cout << format("%1%.%2$06d") % header->ts.tv_sec % header->ts.tv_usec;
 
-	if (header->caplen >= 14) {
+	if (header->caplen >= ETH_MIN_LEN) {
 		cout << format(" %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[6] % (int)data[7] % (int)data[8] % (int)data[9] % (int)data[10] % (int)data[11];
 		cout << format(" > %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[0] % (int)data[1] % (int)data[2] % (int)data[3] % (int)data[4] % (int)data[5];
 	}
 
-	if (header->caplen >= 14+40) {
+	if (header->caplen >= IP6_MIN_LEN) {
 		cout << format(", %1$02x%2$02x:%3$02x%4$02x:%5$02x%6$02x:%7$02x%8$02x:%9$02x%10$02x:%11$02x%12$02x:%13$02x%14$02x:%15$02x%16$02x")
-						% (int)data[14+8+ 0] % (int)data[14+8+ 1] % (int)data[14+8+ 2] % (int)data[14+8+ 3]
-						% (int)data[14+8+ 4] % (int)data[14+8+ 5] % (int)data[14+8+ 6] % (int)data[14+8+ 7]
-						% (int)data[14+8+ 8] % (int)data[14+8+ 9] % (int)data[14+8+10] % (int)data[14+8+11]
-						% (int)data[14+8+12] % (int)data[14+8+13] % (int)data[14+8+14] % (int)data[14+8+15];
+						% (int)data[ETH_MIN_LEN+8+ 0] % (int)data[ETH_MIN_LEN+8+ 1] % (int)data[ETH_MIN_LEN+8+ 2] % (int)data[ETH_MIN_LEN+8+ 3]
+						% (int)data[ETH_MIN_LEN+8+ 4] % (int)data[ETH_MIN_LEN+8+ 5] % (int)data[ETH_MIN_LEN+8+ 6] % (int)data[ETH_MIN_LEN+8+ 7]
+						% (int)data[ETH_MIN_LEN+8+ 8] % (int)data[ETH_MIN_LEN+8+ 9] % (int)data[ETH_MIN_LEN+8+10] % (int)data[ETH_MIN_LEN+8+11]
+						% (int)data[ETH_MIN_LEN+8+12] % (int)data[ETH_MIN_LEN+8+13] % (int)data[ETH_MIN_LEN+8+14] % (int)data[ETH_MIN_LEN+8+15];
 		cout << format(" > %1$02x%2$02x:%3$02x%4$02x:%5$02x%6$02x:%7$02x%8$02x:%9$02x%10$02x:%11$02x%12$02x:%13$02x%14$02x:%15$02x%16$02x")
-						% (int)data[14+8+16] % (int)data[14+8+17] % (int)data[14+8+18] % (int)data[14+8+19]
-						% (int)data[14+8+20] % (int)data[14+8+21] % (int)data[14+8+22] % (int)data[14+8+23]
-						% (int)data[14+8+24] % (int)data[14+8+25] % (int)data[14+8+26] % (int)data[14+8+27]
-						% (int)data[14+8+28] % (int)data[14+8+29] % (int)data[14+8+30] % (int)data[14+8+31];
-		cout << format(" TTL %1$d") % (int)data[14+7];
+						% (int)data[ETH_MIN_LEN+8+16] % (int)data[ETH_MIN_LEN+8+17] % (int)data[ETH_MIN_LEN+8+18] % (int)data[ETH_MIN_LEN+8+19]
+						% (int)data[ETH_MIN_LEN+8+20] % (int)data[ETH_MIN_LEN+8+21] % (int)data[ETH_MIN_LEN+8+22] % (int)data[ETH_MIN_LEN+8+23]
+						% (int)data[ETH_MIN_LEN+8+24] % (int)data[ETH_MIN_LEN+8+25] % (int)data[ETH_MIN_LEN+8+26] % (int)data[ETH_MIN_LEN+8+27]
+						% (int)data[ETH_MIN_LEN+8+28] % (int)data[ETH_MIN_LEN+8+29] % (int)data[ETH_MIN_LEN+8+30] % (int)data[ETH_MIN_LEN+8+31];
+		cout << format(" TTL %1$d") % (int)data[ETH_HDR_LEN+7];
 	}
 
-	if (header->caplen >= 14+40 && data[14+7] == 0xFF && header->caplen >= 14+40+24) {
+	if (header->caplen >= IP6_MIN_LEN && data[ETH_HDR_LEN+7] == MAXTTL && header->caplen >= NDP_MIN_LEN) {
 		cout << format(", NS %1$02x%2$02x:%3$02x%4$02x:%5$02x%6$02x:%7$02x%8$02x:%9$02x%10$02x:%11$02x%12$02x:%13$02x%14$02x:%15$02x%16$02x")
-						% (int)data[14+40+8+ 0] % (int)data[14+40+8+ 1] % (int)data[14+40+8+ 2] % (int)data[14+40+8+ 3]
-						% (int)data[14+40+8+ 4] % (int)data[14+40+8+ 5] % (int)data[14+40+8+ 6] % (int)data[14+40+8+ 7]
-						% (int)data[14+40+8+ 8] % (int)data[14+40+8+ 9] % (int)data[14+40+8+10] % (int)data[14+40+8+11]
-						% (int)data[14+40+8+12] % (int)data[14+40+8+13] % (int)data[14+40+8+14] % (int)data[14+40+8+15];
+						% (int)data[IP6_MIN_LEN+8+ 0] % (int)data[IP6_MIN_LEN+8+ 1] % (int)data[IP6_MIN_LEN+8+ 2] % (int)data[IP6_MIN_LEN+8+ 3]
+						% (int)data[IP6_MIN_LEN+8+ 4] % (int)data[IP6_MIN_LEN+8+ 5] % (int)data[IP6_MIN_LEN+8+ 6] % (int)data[IP6_MIN_LEN+8+ 7]
+						% (int)data[IP6_MIN_LEN+8+ 8] % (int)data[IP6_MIN_LEN+8+ 9] % (int)data[IP6_MIN_LEN+8+10] % (int)data[IP6_MIN_LEN+8+11]
+						% (int)data[IP6_MIN_LEN+8+12] % (int)data[IP6_MIN_LEN+8+13] % (int)data[IP6_MIN_LEN+8+14] % (int)data[IP6_MIN_LEN+8+15];
 
 		const char zero[16] = { 0 };
-		if (!::memcmp(&data[14+8], zero, sizeof(zero))) {
+		if (!::memcmp(&data[ETH_HDR_LEN+8], zero, sizeof(zero))) {
 			cout << " DAD";
 
 			bool eui64 = (
-					data[14+40+8+ 8] == (data[6] ^ 0x02) &&
-					data[14+40+8+ 9] == data[7] &&
-					data[14+40+8+10] == data[8] &&
-					data[14+40+8+11] == 0xFF &&
-					data[14+40+8+12] == 0xFE &&
-					data[14+40+8+13] == data[9] &&
-					data[14+40+8+14] == data[10] &&
-					data[14+40+8+15] == data[11]
+					data[IP6_MIN_LEN+8+ 8] == (data[6] ^ 0x02) &&
+					data[IP6_MIN_LEN+8+ 9] == data[7] &&
+					data[IP6_MIN_LEN+8+10] == data[8] &&
+					data[IP6_MIN_LEN+8+11] == 0xFF &&
+					data[IP6_MIN_LEN+8+12] == 0xFE &&
+					data[IP6_MIN_LEN+8+13] == data[9] &&
+					data[IP6_MIN_LEN+8+14] == data[10] &&
+					data[IP6_MIN_LEN+8+15] == data[11]
 			);
 
-			if (data[14+40+8+ 0] == 0xFE && (data[14+40+8+ 1] & 0xC0) == 0x80) {
+			if (data[IP6_MIN_LEN+8+0] == 0xFE && (data[IP6_MIN_LEN+8+1] & 0xC0) == 0x80) {
 				cout << " LL";
 
 				if (eui64) {
 					cout << " EUI-64";
 				}
-			} else if (data[14+40+8+ 0] == 0xFF) {
+			} else if (data[IP6_MIN_LEN+8+0] == 0xFF) {
 				cout << " MC";
-			} else if ((data[14+40+8+ 0] & 0xE0) == 0x20) {
+			} else if ((data[IP6_MIN_LEN+8+0] & 0xE0) == 0x20) {
 				cout << " GU";
 
 				if (eui64) {
