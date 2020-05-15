@@ -127,20 +127,26 @@ void Capture::next() {
 					data[IP6_MIN_LEN+8+15] == data[11]
 			);
 
-			if (data[IP6_MIN_LEN+8+0] == 0xFE && (data[IP6_MIN_LEN+8+1] & 0xC0) == 0x80) {
-				cout << " LL";
-
-				if (eui64) {
-					cout << " EUI-64";
-				}
-			} else if (data[IP6_MIN_LEN+8+0] == 0xFF) {
-				cout << " MC";
-			} else if ((data[IP6_MIN_LEN+8+0] & 0xE0) == 0x20) {
+			if ((data[IP6_MIN_LEN+8+0] & 0xE0) == 0x20) { // Global Unicast (2000::/3)
 				cout << " GU";
 
 				if (eui64) {
 					cout << " EUI-64";
 				}
+			} else if ((data[IP6_MIN_LEN+8+0] & 0xFE) == 0xFC) { // Unique Local Unicast (fc00::/7)
+				cout << " ULA";
+
+				if (eui64) {
+					cout << " EUI-64";
+				}
+			} else if (data[IP6_MIN_LEN+8+0] == 0xFE && (data[IP6_MIN_LEN+8+1] & 0xC0) == 0x80) { // Link-Scoped Unicast (fe80::/10)
+				cout << " LL";
+
+				if (eui64) {
+					cout << " EUI-64";
+				}
+			} else if (data[IP6_MIN_LEN+8+0] == 0xFF) { // Multicast (ff00::/8)
+				cout << " MC";
 			}
 		}
 	}
