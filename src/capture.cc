@@ -95,9 +95,10 @@ void Capture::next() {
 						% (int)data[14+8+20] % (int)data[14+8+21] % (int)data[14+8+22] % (int)data[14+8+23]
 						% (int)data[14+8+24] % (int)data[14+8+25] % (int)data[14+8+26] % (int)data[14+8+27]
 						% (int)data[14+8+28] % (int)data[14+8+29] % (int)data[14+8+30] % (int)data[14+8+31];
+		cout << format(" TTL %1$d") % (int)data[14+7];
 	}
 
-	if (header->caplen >= 14+40+24) {
+	if (header->caplen >= 14+40 && data[14+7] == 0xFF && header->caplen >= 14+40+24) {
 		cout << format(", NS %1$02x%2$02x:%3$02x%4$02x:%5$02x%6$02x:%7$02x%8$02x:%9$02x%10$02x:%11$02x%12$02x:%13$02x%14$02x:%15$02x%16$02x")
 						% (int)data[14+40+8+ 0] % (int)data[14+40+8+ 1] % (int)data[14+40+8+ 2] % (int)data[14+40+8+ 3]
 						% (int)data[14+40+8+ 4] % (int)data[14+40+8+ 5] % (int)data[14+40+8+ 6] % (int)data[14+40+8+ 7]
