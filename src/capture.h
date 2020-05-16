@@ -24,26 +24,20 @@
 #include <memory>
 #include <string>
 
+#include "common.h"
+
 namespace ip6_dad_restrict {
 
-enum class AddressType {
-	UNKNOWN,
-	GLOBAL_UNICAST,
-	UNIQUE_LOCAL_UNICAST,
-	LINK_SCOPED_UNICAST,
-	MULTICAST,
-};
-
 struct DADPacket {
-	DADPacket(const std::array<unsigned char,6> source_mac, const std::array<unsigned char,16> target_ip) : source_mac(source_mac), target_ip(target_ip) {};
+	DADPacket(const std::array<unsigned char,ETH_MAC_LEN> &source_mac, const std::array<unsigned char,IP6_ADDR_LEN> &target_ip) : source_mac(source_mac), target_ip(target_ip) {};
 	~DADPacket() = default;
 
 	bool eui64() const;
 	AddressType type() const;
 	bool bad() const;
 
-	const std::array<unsigned char,6> source_mac;
-	const std::array<unsigned char,16> target_ip;
+	const std::array<unsigned char,ETH_MAC_LEN> source_mac;
+	const std::array<unsigned char,IP6_ADDR_LEN> target_ip;
 };
 
 class Capture {

@@ -17,6 +17,7 @@ source_files = [
 	'src/command_line.cc',
 	'src/main.cc',
 	'src/print_error.cc',
+	'src/transmit.cc',
 	'src/to_string.cc',
 	vcs_tag(input: 'src/version.h.in', output: 'version.h'),
 ]

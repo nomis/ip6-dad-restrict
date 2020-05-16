@@ -26,6 +26,7 @@
 
 #include <boost/format.hpp>
 
+#include "common.h"
 #include "print_error.h"
 
 using ::boost::format;
@@ -69,13 +70,6 @@ std::unique_ptr<DADPacket> Capture::next() {
 		return nullptr;
 	}
 
-	constexpr size_t ETH_HDR_LEN = 14;
-	constexpr size_t ETH_MIN_LEN = ETH_HDR_LEN;
-	constexpr size_t IP6_HDR_LEN = 40;
-	constexpr size_t IP6_MIN_LEN = ETH_HDR_LEN + IP6_HDR_LEN;
-	constexpr size_t NDP_LEN = 24;
-	constexpr size_t NDP_MIN_LEN = IP6_MIN_LEN + NDP_LEN;
-	constexpr size_t MAXTTL = 255;
 	struct pcap_pkthdr *header;
 	const u_char *data;
 
@@ -89,7 +83,7 @@ std::unique_ptr<DADPacket> Capture::next() {
 	}
 
 	unique_ptr<DADPacket> packet;
-	cout << format("%1%.%2$06d") % header->ts.tv_sec % header->ts.tv_usec;
+	cout << format("%1%.%2$06d  In") % header->ts.tv_sec % header->ts.tv_usec;
 
 	if (header->caplen >= ETH_MIN_LEN) {
 		cout << format(" %1$02x:%2$02x:%3$02x:%4$02x:%5$02x:%6$02x") % (int)data[6] % (int)data[7] % (int)data[8] % (int)data[9] % (int)data[10] % (int)data[11];
@@ -110,7 +104,7 @@ std::unique_ptr<DADPacket> Capture::next() {
 		cout << format(" TTL %1$d") % (int)data[ETH_HDR_LEN+7];
 	}
 
-	if (header->caplen >= IP6_MIN_LEN && data[ETH_HDR_LEN+7] == MAXTTL && header->caplen >= NDP_MIN_LEN) {
+	if (header->caplen >= IP6_MIN_LEN && data[ETH_HDR_LEN+7] == MAX_TTL && header->caplen >= NDP_MIN_LEN) {
 		cout << format(", NS %1$02x%2$02x:%3$02x%4$02x:%5$02x%6$02x:%7$02x%8$02x:%9$02x%10$02x:%11$02x%12$02x:%13$02x%14$02x:%15$02x%16$02x")
 						% (int)data[IP6_MIN_LEN+8+ 0] % (int)data[IP6_MIN_LEN+8+ 1] % (int)data[IP6_MIN_LEN+8+ 2] % (int)data[IP6_MIN_LEN+8+ 3]
 						% (int)data[IP6_MIN_LEN+8+ 4] % (int)data[IP6_MIN_LEN+8+ 5] % (int)data[IP6_MIN_LEN+8+ 6] % (int)data[IP6_MIN_LEN+8+ 7]
